@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>陈轩彤的音乐播放器- 25216950508</title>
+    <style>
+        /* 全局样式重置与基础设置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+        body {
+            background: url("img/bg0.png") center/cover no-repeat;
+            min-height: 100vh;
+            color: #fff;
+            padding: 20px;
+        }
+        /* 页面头部样式 */
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            backdrop-filter: blur(8px);
+        }
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            color: #ffd700;
+        }
+        .student-info {
+            font-size: 16px;
+            color: #e0e0e0;
+        }
+        /* 播放器主体容器 */
+        .player-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: rgba(0,0,0,0.6);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 0 30px rgba(0,255,255,0.2);
+        }
+        /* 模式切换按钮（音乐/MV） */
+        .mode-switch {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        .mode-btn {
+            padding: 8px 20px;
+            border-radius: 20px;
+            border: none;
+            background: rgba(255,255,255,0.1);
+            color: #ccc;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        .mode-btn.active {
+            background: #ffd700;
+            color: #000;
+            font-weight: bold;
+        }
+        /* 内容容器（音乐/MV切换显示） */
+        .content-container {
+            position: relative;
+        }
+        /* 音乐模式内容 */
+        .music-content {
+            display: block;
+        }
+        /* MV模式内容（默认隐藏） */
+        .mv-content {
+            display: none;
+            text-align: center;
+        }
+        /* MV视频样式 */
+        .mv-video {
+            width: 100%;
+            max-width: 800px;
+            height: auto;
+            border-radius: 8px;
+            border: 2px solid rgba(255,215,0,0.5);
+            margin-bottom: 20px;
+        }
+        /* 歌曲封面样式 */
+        .cover-wrapper {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .song-cover {
+            width: 220px;
+            height: 220px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid #ffd700;
+            box-shadow: 0 0 20px rgba(255,215,0,0.5);
+            transition: transform 0.3s ease;
+        }
+        .song-cover.playing {
+            animation: rotate 10s linear infinite;
+        }
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        /* 歌曲/MV信息样式 */
+        .media-info {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        .media-title {
+            font-size: 24px;
+            margin-bottom: 8px;
+            color: #fff;
+        }
+        .media-singer {
+            font-size: 18px;
+            color: #ccc;
+        }
+        /* 进度条样式（通用：音乐/MV共用） */
+        .progress-wrapper {
+            margin-bottom: 25px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .time-display {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            color: #bbb;
+            margin-bottom: 8px;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 3px;
+            cursor: pointer;
+            position: relative;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #ffd700;
+            border-radius: 3px;
+            width: 0%;
+        }
+        .progress-dot {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 14px;
+            height: 14px;
+            background: #ffd700;
+            border-radius: 50%;
+            left: 0%;
+            display: block;
+            cursor: grab;
+        }
+        .progress-dot:active {
+            cursor: grabbing;
+        }
+        /* 控制按钮样式（通用） */
+        .control-buttons {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .btn {
+            background: none;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            transition: color 0.3s ease;
+            width: 36px;
+            height: 36px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+        .btn:hover {
+            filter: brightness(1.5);
+        }
+        .prev-btn {
+            background-image: url("img/上一首.png");
+        }
+        .next-btn {
+            background-image: url("img/下一首.png");
+        }
+        .mv-btn {
+            background-image: url("img/MV.png");
+        }
+        .play-btn {
+            width: 60px;
+            height: 60px;
+            background-image: url("img/继续播放.png");
+            background-size: 40% auto;
+            background-color: #ffd700;
+            border-radius: 50%;
+        }
+        .play-btn.paused {
+            background-image: url("img/暂停.png");
+        }
+        /* MV专属控制按钮 */
+        .mv-control-buttons {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 25px;
+            margin-bottom: 20px;
+        }
+        .volume-btn {
+            background-image: url("img/音量.png");
+        }
+        .volume-btn.muted {
+            background-image: url("img/静音.png");
+        }
+        .fullscreen-btn {
+            background-image: url("img/mode3.png");
+        }
+        /* 播放列表样式 */
+        .playlist-section {
+            margin-top: 30px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .playlist-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            font-size: 18px;
+            color: #ffd700;
+        }
+        .playlist-toggle {
+            width: 24px;
+            height: 24px;
+            background-image: url("img/列表.png");
+            background-size: contain;
+            cursor: pointer;
+        }
+        .playlist {
+            list-style: none;
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            padding: 10px;
+        }
+        .playlist li {
+            padding: 12px 15px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .playlist li:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        .playlist li.active {
+            background: rgba(255,215,0,0.2);
+            color: #ffd700;
+        }
+        .song-duration {
+            font-size: 14px;
+            color: #bbb;
+        }
+        /* 滚动条样式优化 */
+        .playlist::-webkit-scrollbar {
+            width: 6px;
+        }
+        .playlist::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.05);
+            border-radius: 3px;
+        }
+        .playlist::-webkit-scrollbar-thumb {
+            background: rgba(255,215,0,0.5);
+            border-radius: 3px;
+        }
+        /* 响应式适配（小屏幕） */
+        @media (max-width: 768px) {
+            .player-container {
+                padding: 20px;
+            }
+            .song-cover {
+                width: 180px;
+                height: 180px;
+            }
+            .mv-video {
+                width: 100%;
+            }
+            .control-buttons, .mv-control-buttons {
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 页面头部：包含标题与学生信息 -->
+    <div class="header">
+        <h1>网页音乐播放器</h1>
+        <div class="student-info">
+            姓名：陈轩彤 | 学号：25216950508 | 班级：25计科5班
+        </div>
+    </div>
+
+    <!-- 播放器主体容器 -->
+    <div class="player-container">
+        <!-- 模式切换：音乐/MV -->
+        <div class="mode-switch">
+            <button class="mode-btn active" id="musicModeBtn">音乐模式</button>
+            <button class="mode-btn" id="mvModeBtn">MV模式</button>
+        </div>
+
+        <!-- 内容容器：音乐内容与MV内容 -->
+        <div class="content-container">
+            <!-- 音乐模式内容 -->
+            <div class="music-content" id="musicContent">
+                <!-- 歌曲封面 -->
+                <div class="cover-wrapper">
+                    <img src="img/record0.jpg" alt="歌曲封面" class="song-cover" id="songCover">
+                </div>
+
+                <!-- 歌曲信息 -->
+                <div class="media-info">
+                    <h2 class="media-title" id="mediaTitle">歌曲0</h2>
+                    <p class="media-singer" id="mediaSinger">歌手：未知歌手</p>
+                </div>
+
+                <!-- 进度条与时间显示 -->
+                <div class="progress-wrapper">
+                    <div class="time-display">
+                        <span id="currentTime">00:00</span>
+                        <span id="totalTime">00:00</span>
+                    </div>
+                    <div class="progress-bar" id="progressBar">
+                        <div class="progress-fill" id="progressFill"></div>
+                        <div class="progress-dot" id="progressDot"></div>
+                    </div>
+                </div>
+
+                <!-- 控制按钮 -->
+                <div class="control-buttons">
+                    <button class="btn prev-btn" id="prevBtn"></button>
+                    <button class="btn play-btn" id="playBtn"></button>
+                    <button class="btn next-btn" id="nextBtn"></button>
+                    <button class="btn mv-btn" id="toMvBtn"></button>
+                </div>
+            </div>
+
+            <!-- MV模式内容 -->
+            <div class="mv-content" id="mvContent">
+                <!-- MV视频 -->
+                <video class="mv-video" id="mvVideo" controls>
+                    <source src="mp4/video0.mp4" type="video/mp4">
+                    您的浏览器不支持视频播放
+                </video>
+
+                <!-- MV信息 -->
+                <div class="media-info">
+                    <h2 class="media-title" id="mvTitle">MV0</h2>
+                    <p class="media-singer" id="mvSinger">歌手：未知歌手</p>
+                </div>
+
+                <!-- MV进度条 -->
+                <div class="progress-wrapper">
+                    <div class="time-display">
+                        <span id="mvCurrentTime">00:00</span>
+                        <span id="mvTotalTime">00:00</span>
+                    </div>
+                    <div class="progress-bar" id="mvProgressBar">
+                        <div class="progress-fill" id="mvProgressFill"></div>
+                        <div class="progress-dot" id="mvProgressDot"></div>
+                    </div>
+                </div>
+
+                <!-- MV控制按钮 -->
+                <div class="mv-control-buttons">
+                    <button class="btn prev-btn" id="mvPrevBtn"></button>
+                    <button class="btn play-btn" id="mvPlayBtn"></button>
+                    <button class="btn next-btn" id="mvNextBtn"></button>
+                    <button class="btn volume-btn" id="volumeBtn"></button>
+                    <button class="btn fullscreen-btn" id="fullscreenBtn"></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 播放列表 -->
+        <div class="playlist-section">
+            <div class="playlist-header">
+                <span>播放列表</span>
+                <span class="playlist-toggle" id="playlistToggle"></span>
+            </div>
+            <ul class="playlist" id="playlist">
+                <li class="active" data-index="0">
+                    <span>歌曲0</span>
+                    <span class="song-duration">00:00</span>
+                </li>
+                <li data-index="1">
+                    <span>歌曲1</span>
+                    <span class="song-duration">00:00</span>
+                </li>
+                <li data-index="2">
+                    <span>歌曲2</span>
+                    <span class="song-duration">00:00</span>
+                </li>
+                <li data-index="3">
+                    <span>歌曲3</span>
+                    <span class="song-duration">00:00</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- 音频元素（隐藏） -->
+    <audio id="audioPlayer" preload="metadata">
+        <source src="mp3/music0.mp3" type="audio/mpeg">
+        您的浏览器不支持音频播放
+    </audio>
+
+    <script>
+        // 1. 播放时间格式化函数
+        function transTime(value) {
+            var time = '';
+            var h = parseInt(value / 3600);
+            value %= 3600;
+            var m = parseInt(value / 60);
+            var s = parseInt(value % 60);
+            if (h > 0) {
+                time = formatTime(h + ':' + m + ':' + s);
+            } else {
+                time = formatTime(m + ':' + s);
+            }
+            return time;
+        }
+        function formatTime(value) {
+            var time = '';
+            var s = value.split(':');
+            var i = 0;
+            for (; i < s.length - 1; i++) {
+                time += s[i].length == 1 ? '0' + s[i] : s[i];
+                time += ':';
+            }
+            time += s[i].length == 1 ? '0' + s[i] : s[i];
+            return time;
+        }
+
+        // 2. 页面元素获取
+        const audioPlayer = document.getElementById('audioPlayer');
+        const mvVideo = document.getElementById('mvVideo');
+        const musicModeBtn = document.getElementById('musicModeBtn');
+        const mvModeBtn = document.getElementById('mvModeBtn');
+        const musicContent = document.getElementById('musicContent');
+        const mvContent = document.getElementById('mvContent');
+        const playBtn = document.getElementById('playBtn');
+        const mvPlayBtn = document.getElementById('mvPlayBtn');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const mvPrevBtn = document.getElementById('mvPrevBtn');
+        const mvNextBtn = document.getElementById('mvNextBtn');
+        const toMvBtn = document.getElementById('toMvBtn');
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+        const progressDot = document.getElementById('progressDot');
+        const currentTime = document.getElementById('currentTime');
+        const totalTime = document.getElementById('totalTime');
+        const mvProgressBar = document.getElementById('mvProgressBar');
+        const mvProgressFill = document.getElementById('mvProgressFill');
+        const mvProgressDot = document.getElementById('mvProgressDot');
+        const mvCurrentTime = document.getElementById('mvCurrentTime');
+        const mvTotalTime = document.getElementById('mvTotalTime');
+        const songCover = document.getElementById('songCover');
+        const mediaTitle = document.getElementById('mediaTitle');
+        const mediaSinger = document.getElementById('mediaSinger');
+        const mvTitle = document.getElementById('mvTitle');
+        const mvSinger = document.getElementById('mvSinger');
+        const playlist = document.getElementById('playlist');
+        const playlistToggle = document.getElementById('playlistToggle');
+        const volumeBtn = document.getElementById('volumeBtn');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+
+        // 3. 媒体数据（匹配本地资源）
+        const mediaList = [
+            {
+                title: '歌曲0',
+                singer: '歌手0',
+                cover: 'img/record0.jpg',
+                audioSrc: 'mp3/music0.mp3',
+                mvSrc: 'mp4/video0.mp4',
+                bg: 'img/bg0.png',
+                duration: '04:03'
+            },
+            {
+                title: '歌曲1',
+                singer: '歌手1',
+                cover: 'img/record1.jpg',
+                audioSrc: 'mp3/music1.mp3',
+                mvSrc: 'mp4/video1.mp4',
+                bg: 'img/bg1.png',
+                duration: '03:43'
+            },
+            {
+                title: '歌曲2',
+                singer: '歌手2',
+                cover: 'img/record2.jpg',
+                audioSrc: 'mp3/music2.mp3',
+                mvSrc: 'mp4/video2.mp4',
+                bg: 'img/bg2.png',
+                duration: '04:25'
+            },
+            {
+                title: '歌曲3',
+                singer: '歌手3',
+                cover: 'img/record3.jpg',
+                audioSrc: 'mp3/music3.mp3',
+                mvSrc: 'mp4/video3.mp4',
+                bg: 'img/bg3.png',
+                duration: '05:25'
+            }
+        ];
+
+        // 4. 当前播放索引
+        let currentIndex = 0;
+        // 拖动状态标记
+        let isDragging = false;
+
+        // 5. 初始化播放器
+        function initPlayer() {
+            // 初始化媒体信息
+            updateMediaInfo(currentIndex);
+            // 模式切换
+            musicModeBtn.addEventListener('click', () => switchMode('music'));
+            mvModeBtn.addEventListener('click', () => switchMode('mv'));
+            toMvBtn.addEventListener('click', () => switchMode('mv'));
+            // 播放控制
+            playBtn.addEventListener('click', toggleAudioPlay);
+            mvPlayBtn.addEventListener('click', toggleMvPlay);
+            // 上下曲
+            prevBtn.addEventListener('click', playPrev);
+            nextBtn.addEventListener('click', playNext);
+            mvPrevBtn.addEventListener('click', playPrev);
+            mvNextBtn.addEventListener('click', playNext);
+            // 进度条控制（点击+拖动）
+            initProgressBar(progressBar, progressDot, progressFill, 'audio');
+            initProgressBar(mvProgressBar, mvProgressDot, mvProgressFill, 'mv');
+            // 播放列表
+            playlist.addEventListener('click', (e) => {
+                if (e.target.tagName === 'LI' || e.target.parentElement.tagName === 'LI') {
+                    const li = e.target.tagName === 'LI' ? e.target : e.target.parentElement;
+                    currentIndex = parseInt(li.dataset.index);
+                    updateMediaInfo(currentIndex);
+                    (musicModeBtn.classList.contains('active')) ? audioPlayer.play() : mvVideo.play();
+                }
+            });
+            // 播放列表展开/收起
+            let isPlaylistOpen = true;
+            playlistToggle.addEventListener('click', () => {
+                isPlaylistOpen = !isPlaylistOpen;
+                playlist.style.maxHeight = isPlaylistOpen ? '200px' : '0';
+            });
+            // 音量控制
+            volumeBtn.addEventListener('click', toggleMute);
+            // 全屏控制
+            fullscreenBtn.addEventListener('click', toggleFullscreen);
+            // 媒体事件监听（修复播放时进度条更新）
+            audioPlayer.addEventListener('loadedmetadata', updateAudioDuration);
+            audioPlayer.addEventListener('timeupdate', () => updateProgress('audio'));
+            audioPlayer.addEventListener('ended', playNext);
+            mvVideo.addEventListener('loadedmetadata', updateMvDuration);
+            mvVideo.addEventListener('timeupdate', () => updateProgress('mv'));
+            mvVideo.addEventListener('ended', playNext);
+        }
+
+        // 新增：初始化进度条的拖动功能
+        function initProgressBar(bar, dot, fill, type) {
+            // 点击进度条跳转
+            bar.addEventListener('click', (e) => seekMedia(e, type));
+            
+            // 拖动进度点开始
+            dot.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                e.preventDefault(); // 防止选中文字
+            });
+            
+            // 拖动过程
+            document.addEventListener('mousemove', (e) => {
+                if (isDragging) {
+                    const barRect = bar.getBoundingClientRect();
+                    // 计算鼠标在进度条内的相对位置（限制在0-100%）
+                    let percent = (e.clientX - barRect.left) / barRect.width;
+                    percent = Math.max(0, Math.min(1, percent));
+                    
+                    // 更新进度条和进度点
+                    fill.style.width = `${percent * 100}%`;
+                    dot.style.left = `${percent * 100}%`;
+                    
+                    // 更新当前时间显示（预览）
+                    const media = type === 'audio' ? audioPlayer : mvVideo;
+                    const currentTimeEl = type === 'audio' ? currentTime : mvCurrentTime;
+                    if (media.duration) {
+                        currentTimeEl.textContent = transTime(media.duration * percent);
+                    }
+                }
+            });
+            
+            // 拖动结束
+            document.addEventListener('mouseup', () => {
+                if (isDragging) {
+                    isDragging = false;
+                    const barRect = bar.getBoundingClientRect();
+                    // 计算最终进度
+                    const percent = parseFloat(fill.style.width) / 100;
+                    const media = type === 'audio' ? audioPlayer : mvVideo;
+                    if (media.duration) {
+                        media.currentTime = media.duration * percent;
+                        updateProgress(type);
+                    }
+                }
+            });
+        }
+
+        // 6. 切换模式（音乐/MV）
+        function switchMode(mode) {
+            if (mode === 'music') {
+                musicModeBtn.classList.add('active');
+                mvModeBtn.classList.remove('active');
+                musicContent.style.display = 'block';
+                mvContent.style.display = 'none';
+                mvVideo.pause();
+            } else {
+                musicModeBtn.classList.remove('active');
+                mvModeBtn.classList.add('active');
+                musicContent.style.display = 'none';
+                mvContent.style.display = 'block';
+                audioPlayer.pause();
+            }
+        }
+
+        // 7. 更新媒体信息
+        function updateMediaInfo(index) {
+            const media = mediaList[index];
+            // 更新音乐信息
+            mediaTitle.textContent = media.title;
+            mediaSinger.textContent = `歌手：${media.singer}`;
+            songCover.src = media.cover;
+            audioPlayer.src = media.audioSrc;
+            totalTime.textContent = media.duration; // 直接显示预设时长
+            // 更新MV信息
+            mvTitle.textContent = media.title + ' (MV)';
+            mvSinger.textContent = `歌手：${media.singer}`;
+            mvVideo.src = media.mvSrc;
+            mvTotalTime.textContent = media.duration; // 直接显示预设时长
+            // 更新背景
+            document.body.style.backgroundImage = `url(${media.bg})`;
+            // 更新播放列表
+            playlist.querySelectorAll('li').forEach((item, i) => {
+                item.classList.toggle('active', i === index);
+                item.querySelector('.song-duration').textContent = mediaList[i].duration;
+            });
+        }
+
+        // 8. 切换音频播放/暂停
+        function toggleAudioPlay() {
+            if (audioPlayer.paused) {
+                audioPlayer.play();
+                playBtn.classList.add('paused');
+                songCover.classList.add('playing');
+            } else {
+                audioPlayer.pause();
+                playBtn.classList.remove('paused');
+                songCover.classList.remove('playing');
+            }
+        }
+
+        // 9. 切换MV播放/暂停
+        function toggleMvPlay() {
+            if (mvVideo.paused) {
+                mvVideo.play();
+                mvPlayBtn.classList.add('paused');
+            } else {
+                mvVideo.pause();
+                mvPlayBtn.classList.remove('paused');
+            }
+        }
+
+        // 10. 播放上一曲
+        function playPrev() {
+            currentIndex = (currentIndex - 1 + mediaList.length) % mediaList.length;
+            updateMediaInfo(currentIndex);
+            (musicModeBtn.classList.contains('active')) ? audioPlayer.play() : mvVideo.play();
+        }
+
+        // 11. 播放下一曲
+        function playNext() {
+            currentIndex = (currentIndex + 1) % mediaList.length;
+            updateMediaInfo(currentIndex);
+            (musicModeBtn.classList.contains('active')) ? audioPlayer.play() : mvVideo.play();
+        }
+
+        // 修复：播放时自动更新进度条
+        function updateProgress(type) {
+            // 只有非拖动状态下才自动更新
+            if (!isDragging) {
+                const media = type === 'audio' ? audioPlayer : mvVideo;
+                const progressFill = type === 'audio' ? progressFill : mvProgressFill;
+                const progressDot = type === 'audio' ? progressDot : mvProgressDot;
+                const currentTimeEl = type === 'audio' ? currentTime : mvCurrentTime;
+                
+                // 防止媒体未加载完成时出现NaN
+                if (media.duration && !isNaN(media.duration)) {
+                    const progress = (media.currentTime / media.duration) * 100;
+                    progressFill.style.width = `${progress}%`;
+                    progressDot.style.left = `${progress}%`;
+                    currentTimeEl.textContent = transTime(media.currentTime);
+                }
+            }
+        }
+
+        // 13. 进度条点击跳转
+        function seekMedia(e, type) {
+            if (isDragging) return;
+            
+            const media = type === 'audio' ? audioPlayer : mvVideo;
+            const progressBar = type === 'audio' ? progressBar : mvProgressBar;
+            
+            const progressWidth = progressBar.offsetWidth;
+            const clickX = e.offsetX;
+            const seekTime = (clickX / progressWidth) * media.duration;
+            media.currentTime = seekTime;
+            updateProgress(type);
+        }
+
+        // 14. 更新音频时长（备用，优先用预设时长）
+        function updateAudioDuration() {
+            if (audioPlayer.duration) {
+                totalTime.textContent = transTime(audioPlayer.duration);
+            }
+        }
+
+        // 15. 更新MV时长（备用，优先用预设时长）
+        function updateMvDuration() {
+            if (mvVideo.duration) {
+                mvTotalTime.textContent = transTime(mvVideo.duration);
+            }
+        }
+
+        // 16. 切换静音
+        function toggleMute() {
+            mvVideo.muted = !mvVideo.muted;
+            volumeBtn.classList.toggle('muted', mvVideo.muted);
+            audioPlayer.muted = mvVideo.muted;
+        }
+
+        // 17. 切换全屏
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                mvVideo.requestFullscreen().catch(err => console.log(err));
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // 18. 初始化
+        window.addEventListener('load', initPlayer);
+    </script>
+</body>
+</html>
